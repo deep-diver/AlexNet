@@ -2,9 +2,14 @@
 Implementation of AlexNet from ILSVRC-2012 Competition.
 
 ## Things to Implement (or Find APIs if available)
+- Multi GPUs
+   * > with tf.device('/gpu:*'):
 - Rectified Linear Unit (ReLU) Activation Function
+   * (TensorFlow) [tf.nn.relu](https://www.tensorflow.org/api_docs/python/tf/nn/relu)
 - Local Response Normalization Technique
+   * (TensorFlow) [tf.nn.local_response_normalization](https://www.tensorflow.org/api_docs/python/tf/nn/local_response_normalization)
 - Overlapping Pooling
+   * (TensorFlow) [tf.nn.pool](https://www.tensorflow.org/api_docs/python/tf/nn/pool)
 - Overall Architecture
 
 ## Overall Architecture
