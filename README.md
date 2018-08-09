@@ -9,7 +9,7 @@ Implementation of AlexNet from ILSVRC-2012 Competition.
 - Local Response Normalization Technique
    * (TensorFlow) [tf.nn.local_response_normalization](https://www.tensorflow.org/api_docs/python/tf/nn/local_response_normalization)
 - Overlapping Pooling
-   * (TensorFlow) [tf.nn.pool](https://www.tensorflow.org/api_docs/python/tf/nn/pool)
+   * (TensorFlow) [tf.nn.max_pool](https://www.tensorflow.org/api_docs/python/tf/nn/max_pool)
 - Overall Architecture
 
 ## Overall Architecture
