@@ -1,6 +1,8 @@
 # AlexNet
 Implementation of AlexNet from ILSVRC-2012 Competition.
 
+![AlexNet Architecture](./figure1.png)
+
 ## Things to Implement (or Find APIs if available)
 - Multi GPUs
    * > with tf.device('/gpu:*'):
