@@ -3,50 +3,51 @@ from tensorflow.contrib.layers import max_pool2d
 from tensorflow.contrib.layers import flatten
 from tensorflow.contrib.layers import fully_connected
 
-from tensorflow.nn import local_response_normalization
-from tensorflow.nn import dropout
-
-
 # activation function is not specified yet
 def single_gpu_convnet(input):
     # 1st
     conv1 = conv2d(input, num_outputs=96,
-                kernel_size=[11,11], stride=4, padding=“VALID”,
-            	activation_fn=tf.nn.relu)
-    lrn1 = local_response_normalization(conv1, bias=2, alpha=0.0001,beta=0.75)
+                kernel_size=[11,11], stride=4, padding="VALID",
+                activation_fn=tf.nn.relu)
+    lrn1 = tf.nn.local_response_normalization(conv1, bias=2, alpha=0.0001,beta=0.75)
     pool1 = max_pool2d(lrn1, kernel_size=[3,3], stride=2)
 
     # 2nd
     conv2 = conv2d(pool1, num_outputs=256,
-                kernel_size=[5,5], stride=1, padding=“VALID”,
-            	activation_fn=tf.nn.relu)
-    lrn2 = local_response_normalization(conv2, bias=2, alpha=0.0001, beta=0.75)
+                kernel_size=[5,5], stride=1, padding="VALID",
+                biases_initializer=tf.ones_initializer(),
+                activation_fn=tf.nn.relu)
+    lrn2 = tf.nn.local_response_normalization(conv2, bias=2, alpha=0.0001, beta=0.75)
     pool2 = max_pool2d(lrn2, kernel_size=[3,3], stride=2)
 
     #3rd
     conv3 = conv2d(pool2, num_outputs=384,
-                kernel_size=[3,3], stride=1, padding=“VALID”,
-            	activation_fn=tf.nn.relu)
+                kernel_size=[3,3], stride=1, padding="VALID",
+                activation_fn=tf.nn.relu)
 
     #4th
     conv4 = conv2d(conv3, num_outputs=384,
-            	kernel_size=[3,3], stride=1, padding=“VALID”,
-            	activation_fn=tf.nn.relu)
+                kernel_size=[3,3], stride=1, padding="VALID",
+                biases_initializer=tf.ones_initializer(),
+                activation_fn=tf.nn.relu)
 
     #5th
     conv5 = conv2d(conv4, num_outputs=256,
-            	kernel_size=[3,3], stride=1, padding=“VALID”,
-            	activation_fn=tf.nn.relu)
+                kernel_size=[3,3], stride=1, padding="VALID",
+                biases_initializer=tf.ones_initializer(),
+                activation_fn=tf.nn.relu)
     pool5 = max_pool2d(conv5, kernel_size=[3,3], stride=2)
 
     #6th
     flat = flatten(pool5)
-    fcl1 = fully_connected(flat, num_outputs=4096, activation_fn=tf.nn.relu)
-    dr1 = dropout(fcl1, 0.5)
+    fcl1 = fully_connected(flat, num_outputs=4096,
+                            biases_initializer=tf.ones_initializer(), activation_fn=tf.nn.relu)
+    dr1 = tf.nn.dropout(fcl1, 0.5)
 
     #7th
-    fcl2 = fully_connected(dr1, num_outputs=4096, activation_fn=tf.nn.relu)
-    dr2 = dropout(fcl2, 0.5)
+    fcl2 = fully_connected(dr1, num_outputs=4096,
+                            biases_initializer=tf.ones_initializer(), activation_fn=tf.nn.relu)
+    dr2 = tf.nn.dropout(fcl2, 0.5)
 
     #output
     out = fully_connected(dr2, num_outputs=1000, activation_fn=None)
@@ -136,7 +137,7 @@ def main():
     input = tf.placeholder(tf.float32, [None, 224, 224, 3])
     label = tf.placeholder(tf.int32, [None, 1000])
 
-    logits = single_gpu_convnet()
+    logits = single_gpu_convnet(input)
 
     cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=label))
     optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
