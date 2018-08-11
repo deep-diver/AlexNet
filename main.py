@@ -1,30 +1,57 @@
-import tensorflow as tf
+from tensorflow.contrib.layers import conv2d
+from tensorflow.contrib.layers import max_pool2d
+from tensorflow.contrib.layers import flatten
+from tensorflow.contrib.layers import fully_connected
+
+from tensorflow.nn import local_response_normalization
+from tensorflow.nn import dropout
+
 
 # activation function is not specified yet
 def single_gpu_convnet(input):
-    conv1 = tf.nn.conv2d(input, [11, 11, 3, 96], [1, 4, 4, 1], "SAME")
-    lrn1 = tf.nn.local_response_normalization(conv1)
-    pool1 = tf.nn.max_pool(lrn1)
+    # 1st
+    conv1 = conv2d(input, num_outputs=96,
+                kernel_size=[11,11], stride=4, padding=“VALID”,
+            	activation_fn=tf.nn.relu)
+    lrn1 = local_response_normalization(conv1, bias=2, alpha=0.0001,beta=0.75)
+    pool1 = max_pool2d(lrn1, kernel_size=[3,3], stride=2)
 
-    conv2 = tf.nn.conv2d(pool1, [5, 5, 48, 256], [1, 4, 4, 1], "SAME")
-    lrn2 = tf.nn.local_response_normalization(conv2)
-    pool2 = tf.nn.max_pool(lrn2)
+    # 2nd
+    conv2 = conv2d(pool1, num_outputs=256,
+                kernel_size=[5,5], stride=1, padding=“VALID”,
+            	activation_fn=tf.nn.relu)
+    lrn2 = local_response_normalization(conv2, bias=2, alpha=0.0001, beta=0.75)
+    pool2 = max_pool2d(lrn2, kernel_size=[3,3], stride=2)
 
-    conv3 = tf.nn.conv2d(pool2, [3, 3, 128, 384], [1, 4, 4, 1], "SAME")
-    conv4 = tf.nn.conv2d(conv3, [3, 3, 192, 384], [1, 4, 4, 1], "SAME")
+    #3rd
+    conv3 = conv2d(pool2, num_outputs=384,
+                kernel_size=[3,3], stride=1, padding=“VALID”,
+            	activation_fn=tf.nn.relu)
 
-    conv5 = tf.nn.conv2d(conv4, [5, 5, 192, 256], [1, 4, 4, 1], "SAME")
-    lrn5 = tf.nn.local_response_normalization(conv5)
-    pool5 = tf.nn.max_pool(lrn5)
+    #4th
+    conv4 = conv2d(conv3, num_outputs=384,
+            	kernel_size=[3,3], stride=1, padding=“VALID”,
+            	activation_fn=tf.nn.relu)
 
-    flat = tf.contrib.layers.flatten(pool5)
+    #5th
+    conv5 = conv2d(conv4, num_outputs=256,
+            	kernel_size=[3,3], stride=1, padding=“VALID”,
+            	activation_fn=tf.nn.relu)
+    pool5 = max_pool2d(conv5, kernel_size=[3,3], stride=2)
 
-    fcl1 = tf.contrib.layers.fully_connected(flat, 4096)
-    fcl2 = tf.contrib.layers.fully_connected(fcl1, 4096)
-    out = tf.contrib.layers.fully_connected(fcl2, 1000, activation_fn=None)
+    #6th
+    flat = flatten(pool5)
+    fcl1 = fully_connected(flat, num_outputs=4096, activation_fn=tf.nn.relu)
+    dr1 = dropout(fcl1, 0.5)
 
+    #7th
+    fcl2 = fully_connected(dr1, num_outputs=4096, activation_fn=tf.nn.relu)
+    dr2 = dropout(fcl2, 0.5)
+
+    #output
+    out = fully_connected(dr2, num_outputs=1000, activation_fn=None)
     return out
-
+"""
 def multi_gpu_convnet():
     # on GPU #1
     with tf.device('/gpu:0'):
@@ -100,6 +127,7 @@ def multi_gpu_convnet():
         out = tf.contrib.layers.fully_connected(fcl3_1_input, 1000, activation_fn=None)
 
     return out
+"""
 
 def main():
     # hyper-parameters
