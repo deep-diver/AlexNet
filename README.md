@@ -4,16 +4,13 @@ Implementation of AlexNet from ILSVRC-2012 Competition.
 ![AlexNet Architecture](./figure1.png)
 
 ## Resources
-- **main.py**
-  - providing only codes
-  - single_gpu_convnet()
-  - multi_gpu_convnet() is not supported yet
+- **alexnet.py : ** Providing functions to create AlexNet and train it
 
-- **AlexNet.pdf**
-  - my own summarization focused on implementation detail
+- **cifar10_utils.py : ** Providing handy functions to download and preprocess CIFAR-10 dataset
 
-- **AlexNet.ipynb**
-  - Experimental workflow code on CIFAR-10 dataset
+- **AlexNet.pdf : ** My own summarization focused on implementation detail
+
+- **AlexNet.ipynb : ** Experimental workflow code on CIFAR-10 dataset
 
 - **External Checkpoint files**
   - providing pre-trained checkpoint file on CIFAR-10 dataset
@@ -25,23 +22,17 @@ Implementation of AlexNet from ILSVRC-2012 Competition.
 
 - **Layers**
   - **Overlapping Pooling Layer**
-     * (TensorFlow) [tf.contrib.layers.max_pool2d](https://www.tensorflow.org/api_docs/python/tf/contrib/layers/max_pool2d)
 
   - **Convolutional Layer**
-       * (TensorFlow) [tf.contrib.layers.conv2d](https://www.tensorflow.org/api_docs/python/tf/contrib/layers/conv2d)
 
   - **Fully Connected Layer**
-      * (TensorFlow) [tf.contrib.layers.fully_connected](https://www.tensorflow.org/api_docs/python/tf/contrib/layers/fully_connected)
 
 - **Techniques**
   - **Rectified Linear Unit (ReLU) Activation Function**
-     * (TensorFlow) [tf.nn.relu](https://www.tensorflow.org/api_docs/python/tf/nn/relu)
 
   - **Local Response Normalization**
-     * (TensorFlow)  [tf.nn.local_response_normalization](https://www.tensorflow.org/api_docs/python/tf/nn/local_response_normalization)
 
   - **Dropout**
-     * (TensorFlow) [tf.nn.dropout](https://www.tensorflow.org/api_docs/python/tf/nn/dropout)
 
 ## Overall Architecture
 **1. Input Layer of Image Size (224 x 224 x 3)**
@@ -77,11 +68,7 @@ Implementation of AlexNet from ILSVRC-2012 Competition.
 **9. Fully Connected Layer (1000)**
 
 ## Training
-- **Optimizer (Paper)**
-  - SGD (momentum: 0.9, decay: 0.0005)
-
-- **Optimizer (Implementation)**
-  - AdamOptimizer
+- **Optimizer (Implementation) : ** AdamOptimizer
 
 ## Experiment on CIFAR-10 dataset
 - **Environment**
@@ -92,7 +79,7 @@ Implementation of AlexNet from ILSVRC-2012 Competition.
 
 - **Hyperparameters**
   - Learning rate: 0.00005
-  - Epochs: 20
+  - Epochs: 18
   - Batch size: 64
 
 - **Test Accuracy: 0.6548566878980892**
