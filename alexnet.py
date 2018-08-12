@@ -82,7 +82,7 @@ def single_gpu_build_model(learning_rate, dataset):
 
     return input, label, cost, optimizer, accuracy
 
-def start_train(input, label, cost, optimizer, accuracy, save_model_path):
+def start_train(epochs, batch_size, tmpValidFeatures, valid_labels, input, label, cost, optimizer, accuracy, save_model_path):
     with tf.Session() as sess:
         # Initializing the variables
         print('global_variables_initializer...')
@@ -165,7 +165,12 @@ def main():
         sys.exit(0)
 
     print('Training...')
-    start_train(input, label, cost, optimizer, accuracy, save_model_path)
+    start_train(epochs,
+                batch_size,
+                tmpValidFeatures,
+                valid_labels,
+                input, label, cost, optimizer, accuracy,
+                save_model_path)
 
 if __name__ == "__main__":
     main()
