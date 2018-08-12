@@ -3,6 +3,17 @@ Implementation of AlexNet from ILSVRC-2012 Competition.
 
 ![AlexNet Architecture](./figure1.png)
 
+## Required Packages
+- scikit-images
+- pickle
+- tqdm
+- numpy
+- tensorflow (>1.7)
+
+## Usage
+python alexnet.py
+-  This command will download CIFAR-10 dataset and pre-processing of it, and run the training on AlexNet. It will produce the checkpoint file for performing inference later.
+
 ## Resources
 - **alexnet.py : ** Providing functions to create AlexNet and train it
 
