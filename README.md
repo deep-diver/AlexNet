@@ -17,6 +17,7 @@ Implementation of AlexNet from ILSVRC-2012 Competition.
 ## Overall Architecture
 1. Input Layer of Image Size (224 x 224 x 3)
 2. Convolutional Layer (96 x (11 x 11 x 3)) + stride size of 4
+   - Bias with constant value of 1
    - ReLU Activation
    - Local Response Normalization
    - Max Pooling (Overlapping Pooling)
@@ -25,15 +26,33 @@ Implementation of AlexNet from ILSVRC-2012 Competition.
    - Local Response Noramlization
    - Max Pooling (Overlapping Pooling)
 4. Convolutional Layer (384 x (3 x 3 x 128))
+   - Bias with constant value of 1
 5. Convolutional Layer (384 x (3 x 3 x 192))
+   - Bias with constant value of 1
 6. Convolutional Layer (256 x (3 x 3 x 192))
    - Max Pooling (Overlapping Pooling)
 7. Fully Connected Layer (4096)
+   - Bias with constant value of 1
    - Dropout
 8. Fully Connected Layer (4096)
+   - Bias with constant value of 1
    - Dropout
 9. Fully Connected Layer (1000)
 
+## Training
+- Optimizer (Paper)
+  - SGD (momentum: 0.9, decay: 0.0005)
+- Optimizer (Implementation)
+  - AdamOptimizer
+
+## Experiment on CIFAR-10 dataset
+- Hyperparameters
+  - Learning rate: 0.00005
+  - Epochs: 20
+  - Batch size: 64
+- Test Accuracy: 0.6548566878980892
+
+![Experiment Result](./experiment.png)
 
 ## References
 - [ImageNet Classification with Deep Convolutional Neural Networks](https://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks.pdf) (Original Paper)
