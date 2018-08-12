@@ -13,114 +13,111 @@ from tensorflow.contrib.layers import fully_connected
 cifar10_dataset_folder_path = 'cifar-10-batches-py'
 save_model_path = './image_classification'
 
-def single_gpu_convnet(input, num_classes):
-    # 1st
-    conv1 = conv2d(input, num_outputs=96,
-                kernel_size=[11,11], stride=4, padding="VALID",
-                activation_fn=tf.nn.relu)
-    lrn1 = tf.nn.local_response_normalization(conv1, bias=2, alpha=0.0001,beta=0.75)
-    pool1 = max_pool2d(lrn1, kernel_size=[3,3], stride=2)
+class AlexNet:
+    def __init__(self, dataset, learning_rate):
+        if dataset == "cifar10":
+          self.num_classes = 10
 
-    # 2nd
-    conv2 = conv2d(pool1, num_outputs=256,
-                kernel_size=[5,5], stride=1, padding="VALID",
-                biases_initializer=tf.ones_initializer(),
-                activation_fn=tf.nn.relu)
-    lrn2 = tf.nn.local_response_normalization(conv2, bias=2, alpha=0.0001, beta=0.75)
-    pool2 = max_pool2d(lrn2, kernel_size=[3,3], stride=2)
+        self.learning_rate = learning_rate
+        self.input = tf.placeholder(tf.float32, [None, 224, 224, 3], name='input')
+        self.label = tf.placeholder(tf.int32, [None, self.num_classes], name='label')
 
-    #3rd
-    conv3 = conv2d(pool2, num_outputs=384,
-                kernel_size=[3,3], stride=1, padding="VALID",
-                activation_fn=tf.nn.relu)
+        self.logits = self.load_model()
+        self.model = tf.identity(self.logits, name='logits')
 
-    #4th
-    conv4 = conv2d(conv3, num_outputs=384,
-                kernel_size=[3,3], stride=1, padding="VALID",
-                biases_initializer=tf.ones_initializer(),
-                activation_fn=tf.nn.relu)
+        self.cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=self.logits, labels=self.label))
+        self.optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.cost)
 
-    #5th
-    conv5 = conv2d(conv4, num_outputs=256,
-                kernel_size=[3,3], stride=1, padding="VALID",
-                biases_initializer=tf.ones_initializer(),
-                activation_fn=tf.nn.relu)
-    pool5 = max_pool2d(conv5, kernel_size=[3,3], stride=2)
+        self.correct_pred = tf.equal(tf.argmax(self.model, 1), tf.argmax(self.label, 1))
+        self.accuracy = tf.reduce_mean(tf.cast(self.correct_pred, tf.float32), name='accuracy')
 
-    #6th
-    flat = flatten(pool5)
-    fcl1 = fully_connected(flat, num_outputs=4096,
-                            biases_initializer=tf.ones_initializer(), activation_fn=tf.nn.relu)
-    dr1 = tf.nn.dropout(fcl1, 0.5)
+    def load_model(self):
+        # 1st
+        conv1 = conv2d(self.input, num_outputs=96,
+                    kernel_size=[11,11], stride=4, padding="VALID",
+                    activation_fn=tf.nn.relu)
+        lrn1 = tf.nn.local_response_normalization(conv1, bias=2, alpha=0.0001,beta=0.75)
+        pool1 = max_pool2d(lrn1, kernel_size=[3,3], stride=2)
 
-    #7th
-    fcl2 = fully_connected(dr1, num_outputs=4096,
-                            biases_initializer=tf.ones_initializer(), activation_fn=tf.nn.relu)
-    dr2 = tf.nn.dropout(fcl2, 0.5)
+        # 2nd
+        conv2 = conv2d(pool1, num_outputs=256,
+                    kernel_size=[5,5], stride=1, padding="VALID",
+                    biases_initializer=tf.ones_initializer(),
+                    activation_fn=tf.nn.relu)
+        lrn2 = tf.nn.local_response_normalization(conv2, bias=2, alpha=0.0001, beta=0.75)
+        pool2 = max_pool2d(lrn2, kernel_size=[3,3], stride=2)
 
-    #output
-    out = fully_connected(dr2, num_outputs=num_classes, activation_fn=None)
-    return out
+        #3rd
+        conv3 = conv2d(pool2, num_outputs=384,
+                    kernel_size=[3,3], stride=1, padding="VALID",
+                    activation_fn=tf.nn.relu)
 
-def single_gpu_build_model(learning_rate, dataset):
-    if dataset == 'imagenet':
-        num_classes = 1000
-    elif dataset == 'cifar10':
-        num_classes = 10
+        #4th
+        conv4 = conv2d(conv3, num_outputs=384,
+                    kernel_size=[3,3], stride=1, padding="VALID",
+                    biases_initializer=tf.ones_initializer(),
+                    activation_fn=tf.nn.relu)
 
-    input = tf.placeholder(tf.float32, [None, 224, 224, 3], name='input')
-    label = tf.placeholder(tf.int32, [None, num_classes], name='label')
+        #5th
+        conv5 = conv2d(conv4, num_outputs=256,
+                    kernel_size=[3,3], stride=1, padding="VALID",
+                    biases_initializer=tf.ones_initializer(),
+                    activation_fn=tf.nn.relu)
+        pool5 = max_pool2d(conv5, kernel_size=[3,3], stride=2)
 
-    logits = single_gpu_convnet(input, num_classes)
-    model = tf.identity(logits, name='logits')
+        #6th
+        flat = flatten(pool5)
+        fcl1 = fully_connected(flat, num_outputs=4096,
+                                biases_initializer=tf.ones_initializer(), activation_fn=tf.nn.relu)
+        dr1 = tf.nn.dropout(fcl1, 0.5)
 
-    cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=logits, labels=label))
-    optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
+        #7th
+        fcl2 = fully_connected(dr1, num_outputs=4096,
+                                biases_initializer=tf.ones_initializer(), activation_fn=tf.nn.relu)
+        dr2 = tf.nn.dropout(fcl2, 0.5)
 
-    correct_pred = tf.equal(tf.argmax(model, 1), tf.argmax(label, 1))
-    accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32), name='accuracy')
+        #output
+        out = fully_connected(dr2, num_outputs=self.num_classes, activation_fn=None)
+        return out
 
-    return input, label, cost, optimizer, accuracy
+    def train(self, epochs, batch_size, valid_set, save_model_path):
+        tmpValidFeatures, valid_labels = valid_set
 
-def start_train(epochs, batch_size, tmpValidFeatures, valid_labels, input, label, cost, optimizer, accuracy, save_model_path):
-    with tf.Session() as sess:
-        # Initializing the variables
-        print('global_variables_initializer...')
-        sess.run(tf.global_variables_initializer())
+        with tf.Session() as sess:
+            print('global_variables_initializer...')
+            sess.run(tf.global_variables_initializer())
 
-        # Training cycle
-        print('starting training ... ')
-        for epoch in range(epochs):
-            # Loop over all batches
-            n_batches = 5
+            print('starting training ... ')
+            for epoch in range(epochs):
+                n_batches = 5
 
-            for batch_i in range(1, n_batches + 1):
-                count = 0
-                total_loss = 0
+                for batch_i in range(1, n_batches + 1):
+                    count = 0
+                    total_loss = 0
 
-                for batch_features, batch_labels in cifar10_utils.load_preprocess_training_batch(batch_i, batch_size):
-                    loss, _ = sess.run([cost, optimizer],
-                                            feed_dict={input: batch_features, label: batch_labels})
-                    total_loss = total_loss + loss
-                    count = count + 1
+                    for batch_features, batch_labels in cifar10_utils.load_preprocess_training_batch(batch_i, batch_size):
+                        loss, _ = sess.run([self.cost, self.optimizer],
+                                                feed_dict={self.input: batch_features,
+                                                            self.label: batch_labels})
+                        total_loss = total_loss + loss
+                        count = count + 1
 
-                print('Epoch {:>2}, CIFAR-10 Batch {}: Loss Average {:.6f}  '.format(epoch + 1, batch_i, total_loss/count), end='')
+                    print('Epoch {:>2}, CIFAR-10 Batch {}: Loss Average {:.6f}  '.format(epoch + 1, batch_i, total_loss/count), end='')
 
-                # calculate the mean accuracy over all validation dataset
-                valid_acc = 0
-                for batch_valid_features, batch_valid_labels in cifar10_utils.batch_features_labels(tmpValidFeatures, valid_labels, batch_size):
-                    valid_acc += sess.run(accuracy, {input:batch_valid_features, label:batch_valid_labels})
+                    # calculate the mean accuracy over all validation dataset
+                    valid_acc = 0
+                    for batch_valid_features, batch_valid_labels in cifar10_utils.batch_features_labels(tmpValidFeatures, valid_labels, batch_size):
+                        valid_acc += sess.run(self.accuracy,
+                                                feed_dict={self.input:batch_valid_features,
+                                                            self.label:batch_valid_labels})
 
-                tmp_num = tmpValidFeatures.shape[0]/batch_size
-                print('Validation Accuracy {:.6f}'.format(valid_acc/tmp_num))
+                    tmp_num = tmpValidFeatures.shape[0]/batch_size
+                    print('Validation Accuracy {:.6f}'.format(valid_acc/tmp_num))
 
-        # Save Model
-        saver = tf.train.Saver()
-        save_path = saver.save(sess, save_model_path)
+            # Save Model
+            saver = tf.train.Saver()
+            save_path = saver.save(sess, save_model_path)
 
-"""
-    CIFAR10 dataset preparation
-"""
 def parse_args(args):
     parser = argparse.ArgumentParser(description='Script for running AlexNet')
 
@@ -159,18 +156,8 @@ def main():
     else:
         sys.exit(0)
 
-    if gpu_mode == 'single':
-        input, label, cost, optimizer, accuracy = single_gpu_build_model(learning_rate, dataset)
-    else:
-        sys.exit(0)
-
-    print('Training...')
-    start_train(epochs,
-                batch_size,
-                tmpValidFeatures,
-                valid_labels,
-                input, label, cost, optimizer, accuracy,
-                save_model_path)
+    alexNet = AlexNet(dataset, learning_rate)
+    alexNet.train(epochs, batch_size, (tmpValidFeatures, valid_labels), save_model_path)
 
 if __name__ == "__main__":
     main()
