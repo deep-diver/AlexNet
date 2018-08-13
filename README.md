@@ -85,7 +85,7 @@ alexNet.train(epochs=20,
 **9. Fully Connected Layer (1000)**
 
 ## Training
-- **Optimizer (Implementation) : ** AdamOptimizer
+- **Optimizer (Implementation) :** AdamOptimizer
 
 ## Experiment on CIFAR-10 dataset
 - **Environment**
