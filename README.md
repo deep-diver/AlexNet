@@ -1,5 +1,8 @@
-# AlexNet
-Implementation of AlexNet from ILSVRC-2012 Competition.
+# AlexNet in TensorFlow
+
+This repository comes with AlexNet's implementation in TensorFlow. AlexNet is the winner of the ILSVRC-2012 Competition. 
+
+The original model introduced in the paper used two separate GPUs for architecturing. That was due to the lack of GPU resources (memory) at the time. Because the limitation is no longer applicable for the current GPU technology for the AlexNet, this repository's implementation merged two separate models allocated into two separate GPUs into one.
 
 ![AlexNet Architecture](./figure1.png)
 
@@ -8,42 +11,45 @@ Implementation of AlexNet from ILSVRC-2012 Competition.
 - pickle
 - tqdm
 - numpy
-- tensorflow (>1.7)
+- tensorflow-gpu (>1.7)
 
 ## Usage
+- From command line
+  -  Will download CIFAR-10 dataset and pre-processing of it, and run the training on AlexNet. It will produce the checkpoint file for performing inference later.
+```shell
 python alexnet.py
--  This command will download CIFAR-10 dataset and pre-processing of it, and run the training on AlexNet. It will produce the checkpoint file for performing inference later.
+```
+
+- From source code
+  - Same behaviour as from the command line.
+```python
+import cifar10_utils
+from alexnet import AlexNet
+
+...
+valid_set = (valid_features, valid_labels)
+...
+
+alexNet = AlexNet('cifar10', learning_rate=0.0001)
+alexNet.train(epochs=20, 
+              batch_size=128, 
+              valid_set=valid_set, 
+              save_model_path='./model')
+```
 
 ## Resources
-- **alexnet.py : ** Providing functions to create AlexNet and train it
-
-- **cifar10_utils.py : ** Providing handy functions to download and preprocess CIFAR-10 dataset
-
-- **AlexNet.pdf : ** My own summarization focused on implementation detail
-
-- **AlexNet.ipynb : ** Experimental workflow code on CIFAR-10 dataset
-
+- **alexnet.py :** Providing AlexNet class implementation
+- **cifar10_utils.py :** Providing handy functions to download and preprocess CIFAR-10 dataset
+- **AlexNet.pdf :** My own summary focused on implementation detail
+- **AlexNet.ipynb :** Experimental workflow code on CIFAR-10 dataset
 - **External Checkpoint files**
   - providing pre-trained checkpoint file on CIFAR-10 dataset
   - [Download Link](https://drive.google.com/drive/folders/1-bUYAWx6dQ8b5Nw6O_juvZwnNVk-M1Qu?usp=sharing)
 
-## Things to include (or Find APIs if available)
-- **Multi GPUs (Not Implemented Yet)**
-   * > with tf.device('/gpu:*'):
+## Things to include noted in Paper
+- **Layers :** Overlapping Pooling Layer, Convolutional Layer, Fully Connected Layer
 
-- **Layers**
-  - **Overlapping Pooling Layer**
-
-  - **Convolutional Layer**
-
-  - **Fully Connected Layer**
-
-- **Techniques**
-  - **Rectified Linear Unit (ReLU) Activation Function**
-
-  - **Local Response Normalization**
-
-  - **Dropout**
+- **Techniques :** Rectified Linear Unit (ReLU) Activation Function, Local Response Normalization, Dropout
 
 ## Overall Architecture
 **1. Input Layer of Image Size (224 x 224 x 3)**
