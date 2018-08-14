@@ -1,6 +1,7 @@
 import argparse
 import sys
 import pickle
+import numpy as np
 
 import cifar10_utils
 
@@ -79,6 +80,40 @@ class AlexNet:
         #output
         out = fully_connected(dr2, num_outputs=self.num_classes, activation_fn=None)
         return out
+
+    def label_to_name():
+        return ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
+
+    def test(self, image, save_model_path):
+        resize_images = []
+        loaded_graph = tf.Graph()
+
+        with tf.Session(graph=loaded_graph) as sess:
+            loader = tf.train.import_meta_graph(save_model_path + '.meta')
+            loader.restore(sess, save_model_path)        
+
+            loaded_x = loaded_graph.get_tensor_by_name('input:0')
+            loaded_y = loaded_graph.get_tensor_by_name('label:0')
+            loaded_logits = loaded_graph.get_tensor_by_name('logits:0')
+            loaded_acc = loaded_graph.get_tensor_by_name('accuracy:0')
+
+            resize_image = skimage.transform.resize(image, (224, 224), mode='constant')
+            resize_images.append(resize_image)
+
+            test_predictions = sess.run(
+                tf.nn.softmax(loaded_logits),
+                feed_dict={loaded_x: tmpTestFeatures, loaded_y: random_test_labels})
+
+            label_names = load_label_names()
+
+            predictions_array = []
+            pred_names = []
+            
+            for index, pred_value in enumerate(prediction):
+                tmp_pred_name = label_names[index]
+                predictions_array.append({tmp_pred_name : pred_value})
+
+            return predictions_array
 
     def train(self, epochs, batch_size, valid_set, save_model_path):
         tmpValidFeatures, valid_labels = valid_set
