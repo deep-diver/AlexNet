@@ -100,7 +100,7 @@ class AlexNet:
             resize_image = skimage.transform.resize(image, (224, 224), mode='constant')
             resize_images.append(resize_image)
 
-            test_predictions = sess.run(
+            predictions = sess.run(
                 tf.nn.softmax(loaded_logits),
                 feed_dict={loaded_x: tmpTestFeatures, loaded_y: random_test_labels})
 
@@ -109,7 +109,7 @@ class AlexNet:
             predictions_array = []
             pred_names = []
             
-            for index, pred_value in enumerate(prediction):
+            for index, pred_value in enumerate(predictions[0]):
                 tmp_pred_name = label_names[index]
                 predictions_array.append({tmp_pred_name : pred_value})
 
