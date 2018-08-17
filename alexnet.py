@@ -26,8 +26,8 @@ class AlexNet:
         self.logits = self.load_model()
         self.model = tf.identity(self.logits, name='logits')
 
-        self.cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=self.logits, labels=self.label))
-        self.optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.cost)
+        self.cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=self.logits, labels=self.label), name='cost')
+        self.optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate, name='adam').minimize(self.cost)
 
         self.correct_pred = tf.equal(tf.argmax(self.model, 1), tf.argmax(self.label, 1))
         self.accuracy = tf.reduce_mean(tf.cast(self.correct_pred, tf.float32), name='accuracy')
@@ -114,6 +114,51 @@ class AlexNet:
                 predictions_array.append({tmp_pred_name : pred_value})
 
             return predictions_array
+
+    def train_from_ckpt(self, epochs, batch_size, valid_set, save_model_path):
+        tmpValidFeatures, valid_labels = valid_set
+        
+        loaded_graph = tf.Graph()
+
+        with tf.Session(graph=loaded_graph) as sess:
+            loader = tf.train.import_meta_graph(save_model_path + '.meta')
+            loader.restore(sess, save_model_path)        
+
+            loaded_x = loaded_graph.get_tensor_by_name('input:0')
+            loaded_y = loaded_graph.get_tensor_by_name('label:0')
+            loaded_logits = loaded_graph.get_tensor_by_name('logits:0')
+            loaded_acc = loaded_graph.get_tensor_by_name('accuracy:0')
+
+            optimizer = loaded_graph.get_operation_by_name('adam')
+
+            print('starting training ... ')
+            for epoch in range(epochs):
+                n_batches = 5
+
+                for batch_i in range(1, n_batches + 1):
+                    count = 0
+
+                    for batch_features, batch_labels in cifar10_utils.load_preprocess_training_batch(batch_i, batch_size):
+                        _ = sess.run(optimizer,
+                                        feed_dict={loaded_x: batch_features,
+                                                    loaded_y: batch_labels})
+                        count = count + 1
+
+                    print('Epoch {:>2}, CIFAR-10 Batch {}:  '.format(epoch + 1, batch_i), end='')
+
+                    # calculate the mean accuracy over all validation dataset
+                    valid_acc = 0
+                    for batch_valid_features, batch_valid_labels in cifar10_utils.batch_features_labels(tmpValidFeatures, valid_labels, batch_size):
+                        valid_acc += sess.run(loaded_acc,
+                                                feed_dict={loaded_x:batch_valid_features,
+                                                            loaded_y:batch_valid_labels})
+
+                    tmp_num = tmpValidFeatures.shape[0]/batch_size
+                    print('Validation Accuracy {:.6f}'.format(valid_acc/tmp_num))
+
+            # Save Model
+            saver = tf.train.Saver()
+            save_path = saver.save(sess, save_model_path)
 
     def train(self, epochs, batch_size, valid_set, save_model_path):
         tmpValidFeatures, valid_labels = valid_set
