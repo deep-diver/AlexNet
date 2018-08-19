@@ -4,6 +4,7 @@ import pickle
 import numpy as np
 
 import cifar10_utils
+import cifar100_utils
 
 import tensorflow as tf
 from tensorflow.contrib.layers import conv2d
@@ -16,8 +17,12 @@ save_model_path = './image_classification'
 
 class AlexNet:
     def __init__(self, dataset, learning_rate):
+        self.dataset = dataset
+
         if dataset == "cifar10":
           self.num_classes = 10
+        elif dataset == "cifar100":
+          self.num_classes = 100
 
         self.learning_rate = learning_rate
         self.input = tf.placeholder(tf.float32, [None, 224, 224, 3], name='input')
@@ -90,7 +95,7 @@ class AlexNet:
 
         with tf.Session(graph=loaded_graph) as sess:
             loader = tf.train.import_meta_graph(save_model_path + '.meta')
-            loader.restore(sess, save_model_path)        
+            loader.restore(sess, save_model_path)
 
             loaded_x = loaded_graph.get_tensor_by_name('input:0')
             loaded_y = loaded_graph.get_tensor_by_name('label:0')
@@ -108,7 +113,7 @@ class AlexNet:
 
             predictions_array = []
             pred_names = []
-            
+
             for index, pred_value in enumerate(predictions[0]):
                 tmp_pred_name = label_names[index]
                 predictions_array.append({tmp_pred_name : pred_value})
@@ -117,12 +122,12 @@ class AlexNet:
 
     def train_from_ckpt(self, epochs, batch_size, valid_set, save_model_path):
         tmpValidFeatures, valid_labels = valid_set
-        
+
         loaded_graph = tf.Graph()
 
         with tf.Session(graph=loaded_graph) as sess:
             loader = tf.train.import_meta_graph(save_model_path + '.meta')
-            loader.restore(sess, save_model_path)        
+            loader.restore(sess, save_model_path)
 
             loaded_x = loaded_graph.get_tensor_by_name('input:0')
             loaded_y = loaded_graph.get_tensor_by_name('label:0')
@@ -135,30 +140,66 @@ class AlexNet:
             for epoch in range(epochs):
                 n_batches = 5
 
-                for batch_i in range(1, n_batches + 1):
-                    count = 0
+                if self.dataset == 'cifar10':
+                    n_batches = 5
 
-                    for batch_features, batch_labels in cifar10_utils.load_preprocess_training_batch(batch_i, batch_size):
-                        _ = sess.run(optimizer,
-                                        feed_dict={loaded_x: batch_features,
-                                                    loaded_y: batch_labels})
-                        count = count + 1
+                    for batch_i in range(1, n_batches + 1):
+                        self._train_cifar10(sess,
+                                            loaded_x, loaded_y, loaded_optimizer, loaded_acc,
+                                            epoch, batch_i, batch_size, valid_set)
 
-                    print('Epoch {:>2}, CIFAR-10 Batch {}:  '.format(epoch + 1, batch_i), end='')
-
-                    # calculate the mean accuracy over all validation dataset
-                    valid_acc = 0
-                    for batch_valid_features, batch_valid_labels in cifar10_utils.batch_features_labels(tmpValidFeatures, valid_labels, batch_size):
-                        valid_acc += sess.run(loaded_acc,
-                                                feed_dict={loaded_x:batch_valid_features,
-                                                            loaded_y:batch_valid_labels})
-
-                    tmp_num = tmpValidFeatures.shape[0]/batch_size
-                    print('Validation Accuracy {:.6f}'.format(valid_acc/tmp_num))
+                else:
+                    self._train_cifar100(sess,
+                                         loaded_x, loaded_y, loaded_optimizer, loaded_acc,
+                                         epoch, batch_size, valid_set)
 
             # Save Model
             saver = tf.train.Saver()
             save_path = saver.save(sess, save_model_path)
+
+    def _train_cifar10(self, sess,
+                        input, label, optimizer, accuracy,
+                        epoch, batch_i, batch_size, valid_set):
+        tmpValidFeatures, valid_labels = valid_set
+
+        for batch_features, batch_labels in cifar10_utils.load_preprocess_training_batch(batch_i, batch_size):
+            _ = sess.run(optimizer,
+                        feed_dict={input: batch_features,
+                                   label: batch_labels})
+
+        print('Epoch {:>2}, CIFAR-10 Batch {}: '.format(epoch + 1, batch_i), end='')
+
+        # calculate the mean accuracy over all validation dataset
+        valid_acc = 0
+        for batch_valid_features, batch_valid_labels in cifar10_utils.batch_features_labels(tmpValidFeatures, valid_labels, batch_size):
+            valid_acc += sess.run(accuracy,
+                                feed_dict={input:batch_valid_features,
+                                           label:batch_valid_labels})
+
+        tmp_num = tmpValidFeatures.shape[0]/batch_size
+        print('Validation Accuracy {:.6f}'.format(valid_acc/tmp_num))
+
+    def _train_cifar100(self, sess,
+                          input, label, optimizer, accuracy,
+                          epoch, batch_size, valid_set):
+        tmpValidFeatures, valid_labels = valid_set
+
+        for batch_features, batch_labels in cifar100_utils.load_preprocess_training_batch(batch_size):
+            _ = sess.run(optimizer,
+                        feed_dict={input: batch_features,
+                                   label: batch_labels})
+
+        print('Epoch {:>2}, CIFAR-100 : '.format(epoch + 1), end='')
+
+        # calculate the mean accuracy over all validation dataset
+        valid_acc = 0
+        for batch_valid_features, batch_valid_labels in cifar100_utils.batch_features_labels(tmpValidFeatures, valid_labels, batch_size):
+            valid_acc += sess.run(accuracy,
+                                feed_dict={input:batch_valid_features,
+                                            label:batch_valid_labels})
+
+        tmp_num = tmpValidFeatures.shape[0]/batch_size
+        print('Validation Accuracy {:.6f}'.format(valid_acc/tmp_num))
 
     def train(self, epochs, batch_size, valid_set, save_model_path):
         tmpValidFeatures, valid_labels = valid_set
@@ -171,28 +212,16 @@ class AlexNet:
             for epoch in range(epochs):
                 n_batches = 5
 
-                for batch_i in range(1, n_batches + 1):
-                    count = 0
-                    total_loss = 0
+                if self.dataset == 'cifar10':
+                    for batch_i in range(1, n_batches + 1):
+                        self._train_cifar10(sess,
+                                            self.input, self.label, self.optimizer, self.accuracy,
+                                            epoch, batch_i, batch_size, valid_set)
+                elif self.dataset == 'cifar100':
+                    self._train_cifar100(sess,
+                                         self.input, self.label, self.optimizer, self.accuracy,
+                                         epoch, batch_size, valid_set)
 
-                    for batch_features, batch_labels in cifar10_utils.load_preprocess_training_batch(batch_i, batch_size):
-                        loss, _ = sess.run([self.cost, self.optimizer],
-                                                feed_dict={self.input: batch_features,
-                                                            self.label: batch_labels})
-                        total_loss = total_loss + loss
-                        count = count + 1
-
-                    print('Epoch {:>2}, CIFAR-10 Batch {}: Loss Average {:.6f}  '.format(epoch + 1, batch_i, total_loss/count), end='')
-
-                    # calculate the mean accuracy over all validation dataset
-                    valid_acc = 0
-                    for batch_valid_features, batch_valid_labels in cifar10_utils.batch_features_labels(tmpValidFeatures, valid_labels, batch_size):
-                        valid_acc += sess.run(self.accuracy,
-                                                feed_dict={self.input:batch_valid_features,
-                                                            self.label:batch_valid_labels})
-
-                    tmp_num = tmpValidFeatures.shape[0]/batch_size
-                    print('Validation Accuracy {:.6f}'.format(valid_acc/tmp_num))
 
             # Save Model
             saver = tf.train.Saver()
